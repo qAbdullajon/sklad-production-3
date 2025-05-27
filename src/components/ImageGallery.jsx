@@ -2,7 +2,14 @@ import { Eye, Download, X, Upload } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { notification } from "./notification";
 
-const ImageGallery = ({ eventImages, triggerImageUploadConfirm, setPendingImages, eventId }) => {
+const ImageGallery = ({
+  eventImages,
+  setEventImages,
+  eventId,
+  triggerImageUploadConfirm,
+  setPendingImages,
+  pendingImages,
+}) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
   const modalRef = useRef(null);
@@ -43,14 +50,25 @@ const ImageGallery = ({ eventImages, triggerImageUploadConfirm, setPendingImages
     const imagePreviews = files.map((file) => ({
       file,
       url: URL.createObjectURL(file),
+      isPending: true, // Mark as pending
     }));
     setPendingImages((prev) => [...prev, ...imagePreviews]);
-    triggerImageUploadConfirm();
 
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  // Remove a specific pending image
+  const handleRemovePendingImage = (index) => {
+    setPendingImages((prev) => {
+      const imageToRemove = prev[index];
+      if (imageToRemove.url && imageToRemove.url.startsWith("blob:")) {
+        URL.revokeObjectURL(imageToRemove.url);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   // Cleanup preview URLs for pending images only
@@ -71,12 +89,24 @@ const ImageGallery = ({ eventImages, triggerImageUploadConfirm, setPendingImages
   const handleImageError = (e, index) => {
     console.error(`Failed to load image at index ${index}: ${e.target.src}`);
     notification(`Rasmni yuklashda xatolik: Rasm ${index + 1}`, "error");
-    // Optionally remove the image from the DOM
     e.target.style.display = "none";
   };
 
   return (
     <div className="mt-4">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-2xl">Rasmlar</p>
+        {pendingImages.length > 0 && (
+          <button
+            onClick={triggerImageUploadConfirm}
+            className="px-4 py-2 text-white bg-[#249B73] rounded-md flex items-center gap-2"
+          >
+            <Upload className="w-5 h-5" />
+            Rasmlarni tasdiqlash
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-4">
         {/* Add Image Area */}
         <div
@@ -97,43 +127,77 @@ const ImageGallery = ({ eventImages, triggerImageUploadConfirm, setPendingImages
           />
         </div>
 
+        {/* Pending Images */}
+        {pendingImages.length > 0 &&
+          pendingImages.map((item, index) => (
+            <div
+              key={`pending-${index}`}
+              className="relative w-[200px] aspect-square group overflow-hidden rounded-md border-2 border-blue-500 shadow-xl shadow-gray-200"
+            >
+              <img
+                src={item.url}
+                alt={`Pending image ${index + 1}`}
+                className="object-cover w-full h-full"
+                onError={(e) => handleImageError(e, index)}
+              />
+              <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                Kutmoqda
+              </div>
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setSelectedImage(item.url)}
+                  className="p-2 bg-white rounded-full text-gray-700 hover:text-[#249B73] transition-colors"
+                  aria-label="View pending image"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => handleRemovePendingImage(index)}
+                  className="p-2 bg-white rounded-full text-gray-700 hover:text-red-500 transition-colors"
+                  aria-label="Remove pending image"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          ))}
+
         {/* Existing Images */}
         {eventImages?.length > 0 ? (
-          eventImages.map((item, index) => {
-            const imageUrl = item.url || `${import.meta.env.VITE_BASE_URL}${item}`;
-            return (
-              <div
-                key={`${item.url || item}-${index}`}
-                className="relative w-[200px] aspect-square group overflow-hidden rounded-md border border-gray-300 shadow-xl shadow-gray-200"
-              >
-                <img
-                  src={imageUrl}
-                  alt={`Event image ${index + 1}`}
-                  className="object-cover w-full h-full"
-                  onError={(e) => handleImageError(e, index)}
-                />
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => setSelectedImage(imageUrl)}
-                    className="p-2 bg-white rounded-full text-gray-700 hover:text-[#249B73] transition-colors"
-                    aria-label="View image"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
-                  {/* <a
-                    href={imageUrl}
-                    download
-                    className="p-2 bg-white rounded-full text-gray-700 hover:text-[#249B73] transition-colors"
-                    aria-label="Download image"
-                  >
-                    <Download className="w-5 h-5" />
-                  </a> */}
-                </div>
+          eventImages.map((item, index) => (
+            <div
+              key={`existing-${item.url}-${index}`}
+              className="relative w-[200px] aspect-square group overflow-hidden rounded-md border border-gray-300 shadow-xl shadow-gray-200"
+            >
+              <img
+                src={item.url}
+                alt={`Event image ${index + 1}`}
+                className="object-cover w-full h-full"
+                onError={(e) => handleImageError(e, index)}
+              />
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setSelectedImage(item.url)}
+                  className="p-2 bg-white rounded-full text-gray-700 hover:text-[#249B73] transition-colors"
+                  aria-label="View image"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+                <a
+                  href={item.url}
+                  download
+                  className="p-2 bg-white rounded-full text-gray-700 hover:text-[#249B73] transition-colors"
+                  aria-label="Download image"
+                >
+                  <Download className="w-5 h-5" />
+                </a>
               </div>
-            );
-          })
+            </div>
+          ))
         ) : (
-          <p className="text-gray-500">Hozircha rasmlar mavjud emas</p>
+          pendingImages.length === 0 && (
+            <p className="text-gray-500">Hozircha rasmlar mavjud emas</p>
+          )
         )}
       </div>
 

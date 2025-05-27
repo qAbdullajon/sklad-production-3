@@ -28,16 +28,11 @@ export default function WarehousesDetails() {
   const columns = [
     { field: "id", headerName: "№" },
     { field: "event_number", headerName: "Yuk xati raqami" },
-    { field: "createdAt", headerName: (
-      <div>
-        <DoubleDateModal title="Yaratilgan sana" />
-      </div>
-    ) },
-    { field: "status", headerName: (
-      <div>
-        <StatusSelector />
-      </div>
-    ) },
+    { field: "createdAt", headerName: "Yaratilgan sana" },
+    {
+      field: "status",
+      headerName: "Status",
+    },
     { field: "products_count", headerName: "Maxsulot soni", vector: true },
     { field: "actions", headerName: "Harakatlar" },
   ];
@@ -58,7 +53,6 @@ export default function WarehousesDetails() {
           }
         );
         if (res.status === 200) {
-
           setData(searchQuery ? res.data.events : res.data.events);
           setTotal(res.data.totalItems);
         }
@@ -89,7 +83,7 @@ export default function WarehousesDetails() {
       createdAt: createdAtRaw
         ? format(new Date(createdAtRaw), "dd-MM-yyyy")
         : "Nomaʼlum sana",
-      event_number: '#' + eventNumber || "Nomaʼlum",
+      event_number: "#" + eventNumber || "Nomaʼlum",
       products_count: row.productsCount,
       status: (
         <div className="flex flex-wrap gap-1">
@@ -145,7 +139,7 @@ export default function WarehousesDetails() {
           <CircularProgress color="success" />
         </div>
       ) : total === 0 ? (
-        <Box textAlign="center" py={10} sx={{userSelect: 'none'}}>
+        <Box textAlign="center" py={10} sx={{ userSelect: "none" }}>
           <Box
             component="img"
             src={NoData}

@@ -8,15 +8,29 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import NoData from "../../assets/no-data.png";
 import { getStatusStyle } from "../../utils/status";
 import { notification } from "../../components/notification";
-import { useStatusFilterStore } from "../../hooks/useFilterStore";
+import {
+  useDateFilterStore,
+  useMibStore,
+  useStatusFilterStore,
+  useSudStore,
+} from "../../hooks/useFilterStore";
+import MibSelector from "../../components/mib-location";
+import SudSelector from "../../components/sud-location";
+import DoubleDateModal from "../../components/DoubleDateModal";
+import StatusSelector from "../../components/status-selector";
 
 export default function Arxive() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setValue, setId } = useStatusFilterStore();
+  const { id: mibId } = useMibStore();
+  const { id: sudId } = useSudStore();
+  const { startDate, endDate } = useDateFilterStore();
 
   // URL dan page va limit ni olib pagination uchun boshlang'ich qiymatlarni beramiz
-  const initialPage = Number(searchParams.get("page")) ? Number(searchParams.get("page")) - 1 : 0;
+  const initialPage = Number(searchParams.get("page"))
+    ? Number(searchParams.get("page")) - 1
+    : 0;
   const initialRowsPerPage = Number(searchParams.get("limit")) || 100;
   const searchQuery = searchParams.get("search") || "";
 
@@ -37,7 +51,17 @@ export default function Arxive() {
       try {
         setLoading(true);
         const res = await $api.get(
-          `/products/get/archive?page=${pagination.page + 1}&limit=${pagination.rowsPerPage}&search=${searchQuery}`
+          `/products/get/archive?page=${pagination.page + 1}&limit=${
+            pagination.rowsPerPage
+          }&search=${searchQuery}`,
+          {
+            params: {
+              mibId: mibId || "",
+              sudId: sudId || "",
+              startDate: startDate || "",
+              endDate: endDate || "",
+            },
+          }
         );
         setData(res.data.products);
         setPagination((prev) => ({
@@ -53,7 +77,15 @@ export default function Arxive() {
       }
     };
     getAllArchive();
-  }, [pagination.page, pagination.rowsPerPage, searchQuery]);
+  }, [
+    pagination.page,
+    pagination.rowsPerPage,
+    searchQuery,
+    sudId,
+    mibId,
+    startDate,
+    endDate,
+  ]);
 
   // URL parametrlarini pagination bilan sinxronlashtirish
   useEffect(() => {
@@ -139,7 +171,7 @@ export default function Arxive() {
       "Noma’lum";
 
     const sudDate = lastSource?.sud_date
-      ? format(new Date(lastSource.sud_date), "yyyy-MM-dd")
+      ? format(new Date(lastSource.sud_date), "dd-MM-yyyy")
       : "Noma’lum";
 
     return {
@@ -179,12 +211,23 @@ export default function Arxive() {
   const columns = [
     { field: "id", headerName: "№" },
     { field: "event_number", headerName: "Yuk xati raqami" },
-    { field: "mib_number", headerName: "MIB ning dalolatnoma raqami" },
-    { field: "mib_region", headerName: "MIB ning hududi" },
+    {
+      field: "mib_region",
+      headerName: <MibSelector title="MIB ning hududi" />,
+    },
     { field: "sud_number", headerName: "Sudning ijro varaqa no'meri" },
-    { field: "sud_region", headerName: "Sudning hududi" },
-    { field: "sud_date", headerName: "Sudning sanasi" },
-    { field: "status", headerName: "Status" },
+    {
+      field: "sud_region",
+      headerName: <SudSelector title="Sudning hududi" />,
+    },
+    {
+      field: "sud_date",
+      headerName: <DoubleDateModal title="Sudning sanasi" />,
+    },
+    {
+      field: "status",
+      headerName: <StatusSelector />,
+    },
     { field: "actions", headerName: "Taxrirlash" },
   ];
 
@@ -200,7 +243,19 @@ export default function Arxive() {
         <div className="flex justify-center mt-10">
           <CircularProgress color="success" />
         </div>
-      ) : pagination.total === 0 ? (
+      ) : (
+        <GlobalTable
+          columns={columns}
+          rows={rows}
+          page={pagination.page}
+          rowsPerPage={pagination.rowsPerPage}
+          total={pagination.total}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+        />
+      )}
+
+      {pagination.total === 0 && (
         <Box textAlign="center" py={10} sx={{ userSelect: "none" }}>
           <Box
             component="img"
@@ -212,16 +267,6 @@ export default function Arxive() {
             Hech qanday ma'lumot topilmadi
           </Typography>
         </Box>
-      ) : (
-        <GlobalTable
-          columns={columns}
-          rows={rows}
-          page={pagination.page}
-          rowsPerPage={pagination.rowsPerPage}
-          total={pagination.total}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
-        />
       )}
     </div>
   );

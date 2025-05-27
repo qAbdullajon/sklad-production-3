@@ -136,7 +136,7 @@ export default function Sotilgan() {
     sud_date: row.document_product[row.document_product.length - 1]?.sud_date
       ? format(
           new Date(row.document_product[row.document_product.length - 1]?.sud_date),
-          "yyyy-MM-dd"
+          "dd-MM-yyyy"
         )
       : "Noma’lum",
     total_price: row.total_price || "0",

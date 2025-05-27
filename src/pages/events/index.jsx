@@ -202,20 +202,20 @@ export default function Events() {
     setEditData(row);
   };
 
-  // const handleDelete = async () => {
-  //   if (confirm.open && confirm.id) {
-  //     try {
-  //       const res = await $api.delete(`events/delete/${confirm.id}`);
-  //       if (res.status === 200) {
-  //         setData(data.filter((item) => item.id !== confirm.id));
-  //         setConfirm((prev) => ({ ...prev, open: false }));
-  //         notification("Yuk xati muvaffaqiyatli o'chirildi", "success");
-  //       }
-  //     } catch (error) {
-  //       notification(error?.response?.data?.message || "O'chirishda xatolik yuz berdi");
-  //     }
-  //   }
-  // };
+  const handleDelete = async () => {
+    if (confirm.open && confirm.id) {
+      try {
+        const res = await $api.delete(`events/delete/${confirm.id}`);
+        if (res.status === 200) {
+          setData(data.filter((item) => item.id !== confirm.id));
+          setConfirm((prev) => ({ ...prev, open: false }));
+          notification("Yuk xati muvaffaqiyatli o'chirildi", "success");
+        }
+      } catch (error) {
+        notification(error?.response?.data?.message || "O'chirishda xatolik yuz berdi");
+      }
+    }
+  };
 
   useEffect(() => {
     if (type === "event-delete") {
@@ -232,28 +232,6 @@ export default function Events() {
     ...row,
     actions: (
       <div className="flex items-center gap-4">
-        {/* <button
-          onClick={() =>
-            setConfirm((prev) => ({
-              ...prev,
-              open: true,
-              id: row.id,
-              event_number: row.event_number,
-              message: (
-                <span>
-                  Siz{" "}
-                  <span className="text-red-500 font-semibold">
-                    {row.event_number}
-                  </span>{" "}
-                  id ga tegishli yuk xatini o'chirmoqchimisiz?
-                </span>
-              ),
-            }))
-          }
-          className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 cursor-pointer"
-        >
-          <Trash size={16} />
-        </button> */}
         <button
           className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 cursor-pointer"
           onClick={() => handleEdit(row)}
@@ -331,12 +309,12 @@ export default function Events() {
 
       <IsAddProduct />
       <EventsModal setConfirm={setConfirm} />
-      {/* <ConfirmationModal
+      <ConfirmationModal
         isOpen={confirm.open}
         onClose={() => setConfirm((prev) => ({ ...prev, open: false }))}
         onConfirm={confirm.id ? handleDelete : handleSuccess}
         message={confirm.message}
-      /> */}
+      />
     </>
   );
 }

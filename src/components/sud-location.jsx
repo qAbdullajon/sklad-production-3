@@ -12,7 +12,7 @@ const SudSelector = ({ title }) => {
   useEffect(() => {
     const fetchStatuses = async () => {
       try {
-        const response = await $api.get("/sud/all");
+        const response = await $api.get("/sud/all?limit=200");
 
         if (response.status === 200) {
           setStatuses(response.data.mibs);

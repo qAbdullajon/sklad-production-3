@@ -23,26 +23,27 @@ const DoubleDateModal = ({ title }) => {
   }, []);
 
   const handleSubmit = () => {
-    const formattedStart = format(stateStartDate, "yyyy-MM-dd");
-    const formattedEnd = format(stateEndDate, "yyyy-MM-dd");
+    const formattedStart = format(stateStartDate, "dd-MM-yyyy");
+    const formattedEnd = format(stateEndDate, "dd-MM-yyyy");
     setStartDate(formattedStart);
     setEndDate(formattedEnd);
+    handleClose()
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box>
         <div
-          className="cursor-pointer flex gap-3 items-center"
+          className="cursor-pointer flex gap-3 items-center w-[150px]"
           onClick={handleOpen}
         >
           {startDate && endDate ? (
             <div className="text-sm text-gray-600 mt-2">
-              <span className="font-semibold">{startDate}</span>{" "}
-              — <span className="font-semibold">{endDate}</span>
+              <span className="font-semibold">{startDate}</span> —{" "}
+              <span className="font-semibold">{endDate}</span>
             </div>
           ) : (
-            <div>
+            <div className="flex items-center gap-2">
               <p>{title}</p>
               <Calendar size={18} />
             </div>

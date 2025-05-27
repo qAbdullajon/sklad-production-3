@@ -13,19 +13,26 @@ import StatusSelector from "../../components/status-selector";
 
 import NoData from "../../assets/no-data.png";
 import { getStatusStyle } from "../../utils/status";
-import { useStatusFilterStore } from "../../hooks/useFilterStore";
+import {
+  useDateFilterStore,
+  useMibStore,
+  useStatusFilterStore,
+  useSudStore,
+} from "../../hooks/useFilterStore";
 
 export default function EgasigaQaytarilgan() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("search");
   const prevSearchQuery = useRef(searchQuery);
-
   const { setValue, setId } = useStatusFilterStore();
 
   // 1. Get `page` and `limit` from URL
   const urlPage = parseInt(searchParams.get("page")) || 0;
   const urlLimit = parseInt(searchParams.get("limit")) || 100;
+  const { id: mibId } = useMibStore();
+  const { id: sudId } = useSudStore();
+  const { startDate, endDate } = useDateFilterStore();
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +78,10 @@ export default function EgasigaQaytarilgan() {
             page: pagination.currentPage,
             limit: pagination.rowsPerPage,
             search: searchQuery,
+            mibId: mibId || "",
+            sudId: sudId || "",
+            startDate: startDate || "",
+            endDate: endDate || "",
           },
         }
       );
@@ -89,7 +100,7 @@ export default function EgasigaQaytarilgan() {
   // 2. Fetch data when pagination or search changes
   useEffect(() => {
     fetchData();
-  }, [pagination.page, pagination.rowsPerPage, searchQuery]);
+  }, [pagination.page, pagination.rowsPerPage, searchQuery, sudId, mibId, startDate, endDate]);
 
   // 3. Reset to page 0 when search changes, and update URL
   useEffect(() => {
@@ -155,7 +166,7 @@ export default function EgasigaQaytarilgan() {
       sud_number: doc.sud_dalolatnoma || "Yo'q",
       sud_region: doc.sud_document?.name || "Yo'q",
       sud_date: doc.sud_date
-        ? format(new Date(doc.sud_date), "yyyy-MM-dd")
+        ? format(new Date(doc.sud_date), "dd-MM-yyyy")
         : "Yo'q",
       total_price: row.total_price || "0",
       status: (
@@ -192,7 +203,19 @@ export default function EgasigaQaytarilgan() {
         <div className="text-center text-gray-500">
           <CircularProgress color="success" />
         </div>
-      ) : data.length === 0 ? (
+      ) : (
+        <GlobalTable
+          columns={columns}
+          rows={rows}
+          page={pagination.page}
+          rowsPerPage={pagination.rowsPerPage}
+          total={pagination.total}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+        />
+      )}
+
+      {data.length === 0 && (
         <Box textAlign="center" py={10} sx={{ userSelect: "none" }}>
           <Box
             component="img"
@@ -204,16 +227,6 @@ export default function EgasigaQaytarilgan() {
             Hech qanday ma'lumot topilmadi
           </Typography>
         </Box>
-      ) : (
-        <GlobalTable
-          columns={columns}
-          rows={rows}
-          page={pagination.page}
-          rowsPerPage={pagination.rowsPerPage}
-          total={pagination.total}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
-        />
       )}
     </div>
   );

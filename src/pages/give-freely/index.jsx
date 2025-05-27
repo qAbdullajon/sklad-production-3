@@ -7,7 +7,12 @@ import NoData from "../../assets/no-data.png";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { getStatusStyle } from "../../utils/status";
 import { format } from "date-fns";
-import { useStatusFilterStore } from "../../hooks/useFilterStore";
+import {
+  useDateFilterStore,
+  useMibStore,
+  useStatusFilterStore,
+  useSudStore,
+} from "../../hooks/useFilterStore";
 
 export default function GiveFreely() {
   const navigate = useNavigate();
@@ -21,6 +26,10 @@ export default function GiveFreely() {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const { id: mibId } = useMibStore();
+  const { id: sudId } = useSudStore();
+  const { startDate, endDate } = useDateFilterStore();
 
   // Pagination state will now sync with URL params
   const [pagination, setPagination] = useState({
@@ -53,6 +62,10 @@ export default function GiveFreely() {
             page: pagination.currentPage,
             limit: pagination.rowsPerPage,
             search: searchQuery,
+            mibId: mibId || "",
+            sudId: sudId || "",
+            startDate: startDate || "",
+            endDate: endDate || "",
           },
         }
       );
@@ -80,9 +93,17 @@ export default function GiveFreely() {
       page: pagination.currentPage,
       limit: pagination.rowsPerPage,
     });
-  }, [pagination.currentPage, pagination.rowsPerPage, searchQuery, setSearchParams]);
+  }, [
+    pagination.currentPage,
+    pagination.rowsPerPage,
+    searchQuery,
+    setSearchParams,
+    sudId,
+    mibId,
+    startDate,
+    endDate,
+  ]);
 
-  // If URL params change externally, sync state
   useEffect(() => {
     setPagination({
       page: pageParam - 1,
@@ -132,7 +153,7 @@ export default function GiveFreely() {
       row.document_product[row.document_product.length - 1]?.sud_document?.name,
     sud_date: format(
       row.document_product[row.document_product.length - 1]?.sud_date,
-      "yyyy-MM-dd"
+      "dd-MM-yyyy"
     ),
     total_price: row.total_price || "0",
     status: (

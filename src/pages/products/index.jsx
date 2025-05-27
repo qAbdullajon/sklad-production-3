@@ -6,7 +6,6 @@ import {
   Outlet,
   useNavigate,
   useSearchParams,
-  useLocation,
 } from "react-router-dom";
 import { useProductStore } from "../../hooks/useModalState";
 import { usePathStore } from "../../hooks/usePathStore";
@@ -18,25 +17,28 @@ import { getStatusStyle } from "../../utils/status";
 import StatusSelector from "../../components/status-selector";
 import ConfirmationModal from "../../components/Add-product/IsAddProduct";
 import ProductTypeSelector from "../../components/product-type";
-import { useStatusFilterStore } from "../../hooks/useFilterStore";
+import {
+  useProductTypeFilterStore,
+  useStatusFilterStore,
+} from "../../hooks/useFilterStore";
 
 export default function Products() {
-  const { onOpen, data, setData, total, setTotal, setEditData } = useProductStore();
+  const { onOpen, data, setData, total, setTotal, setEditData } =
+    useProductStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const { id } = useStatusFilterStore();
   const { setName } = usePathStore();
   const navigate = useNavigate();
-  const location = useLocation(); // Added useLocation
   const searchQuery = searchParams.get("search") || "";
 
   // Initialize page and rowsPerPage from URL
   const [page, setPage] = useState(() => {
     const pageParam = parseInt(searchParams.get("page"));
-    return isNaN(pageParam) || pageParam < 1 ? 0 : pageParam - 1; // 0-based indexing
+    return isNaN(pageParam) || pageParam < 1 ? 0 : pageParam - 1; // 0-based to 0-based indexing
   });
   const [rowsPerPage, setRowsPerPage] = useState(() => {
     const limitParam = parseInt(searchParams.get("limit"));
-    return isNaN(limitParam) || limitParam < 1 ? 25 : limitParam; // Changed default to 25
+    return isNaN(limitParam) || limitParam < 1 ? 100 : limitParam;
   });
 
   const [confirm, setConfirm] = useState({
@@ -44,15 +46,14 @@ export default function Products() {
     id: null,
     name: "",
   });
+  const { id: typeId } = useProductTypeFilterStore();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // Added error state
 
   // Fetch products based on URL params and filters
   useEffect(() => {
     const getAllProducts = async () => {
       try {
         setLoading(true);
-        setError(null);
         const res = await $api.get(
           searchQuery ? `/products/search` : `/products/all`,
           {
@@ -61,23 +62,23 @@ export default function Products() {
               limit: rowsPerPage,
               statusId: id || "",
               search: searchQuery,
+              typeId: typeId || "",
             },
           }
         );
         setData(res.data.data || []);
         setTotal(res.data.total || 0);
       } catch (error) {
-        console.error("Error fetching products:", error);
-        setError("Failed to fetch products. Please try again.");
+        console.error("Xatolik:", error);
       } finally {
         setLoading(false);
       }
     };
 
     getAllProducts();
-  }, [page, rowsPerPage, searchQuery, id, setData, setTotal]);
+  }, [page, rowsPerPage, searchQuery, id, typeId]);
 
-  // Reset page to 0 when searchQuery changes and no valid page param exists
+  // Reset page to 0 only when searchQuery changes and no valid page param exists
   useEffect(() => {
     if (searchQuery) {
       const pageParam = parseInt(searchParams.get("page"));
@@ -124,7 +125,6 @@ export default function Products() {
         }
       } catch (error) {
         console.error("Delete error:", error);
-        setError("Failed to delete product. Please try again.");
       }
     }
   };
@@ -134,9 +134,9 @@ export default function Products() {
     onOpen();
   };
 
-  const formattedRows = data.map((row, i) => ({
+  const formattedRows = data.map((row, index) => ({
     ...row,
-    id: rowsPerPage * page + i + 1, // Use API-provided ID
+    id: page * rowsPerPage + index + 1, // Adjust index based on page
     quantity: Number(row.quantity).toFixed(0),
     price: Number(row.price).toLocaleString("en-US", {
       minimumFractionDigits: row.price % 1 === 0 ? 0 : 2,
@@ -165,7 +165,7 @@ export default function Products() {
         >
           <Pencil size={17} />
         </button>
-        <button
+        {/* <button
           className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 cursor-pointer"
           onClick={() =>
             setConfirm((prev) => ({
@@ -177,7 +177,7 @@ export default function Products() {
           }
         >
           <Trash size={16} />
-        </button>
+        </button> */}
         <button
           className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 cursor-pointer"
           onClick={() => nextButton(row)}
@@ -245,30 +245,11 @@ export default function Products() {
           Hali tasdiqlanmagan mahsulotlar
         </NavLink>
       </div>
-
-      {error && (
-        <Typography color="error" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
-
-７      {location.pathname === "/maxsulotlar" ? (
+      {location.pathname === "/maxsulotlar" ? (
         loading ? (
           <div className="flex justify-center mt-10">
             <CircularProgress color="success" />
           </div>
-        ) : total === 0 ? (
-          <Box textAlign="center" py={10} sx={{ userSelect: "none" }}>
-            <Box
-              component="img"
-              src={NoData}
-              alt="No data"
-              sx={{ width: 128, height: 128, margin: "0 auto", mb: 2 }}
-            />
-            <Typography variant="body1" color="text.secondary">
-              Hech qanday ma'lumot topilmadi
-            </Typography>
-          </Box>
         ) : (
           <GlobalTable
             columns={columns}
@@ -284,7 +265,21 @@ export default function Products() {
         <Outlet />
       )}
 
-      <ProductModal />
+      {total === 0 && (
+        <Box textAlign="center" py={10} sx={{ userSelect: "none" }}>
+          <Box
+            component="img"
+            src={NoData}
+            alt="No data"
+            sx={{ width: 128, height: 128, margin: "0 auto", mb: 2 }}
+          />
+          <Typography variant="body1" color="text.secondary">
+            Hech qanday ma'lumot topilmadi
+          </Typography>
+        </Box>
+      )}
+
+      <ProductModal setConfirm={setConfirm} />
       <ConfirmationModal
         isOpen={confirm.open}
         onClose={() => setConfirm((prev) => ({ ...prev, open: false }))}

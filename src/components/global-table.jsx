@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -31,94 +31,28 @@ export default function GlobalTable({
   onPageChange,
   totalQuantity,
 }) {
-  const { setValue: setStatusValue, setId: setStatusId, value: statusValue, id: statusId } =
+  const { setValue: setStatusValue, setId: setStatusId } =
     useStatusFilterStore();
-  const { setValue: setShipperValue, setId: setShipperId, value: shipperValue, id: shipperId } =
+  const { setValue: setShipperValue, setId: setShipperId } =
     useShipperFilterStore();
-  const { setValue: setTypeValue, setId: setTypeId, value: typeValue, id: typeId } =
+  const { setValue: setTypeValue, setId: setTypeId } =
     useProductTypeFilterStore();
-  const { setEndDate, setStartDate, startDate, endDate } = useDateFilterStore();
+  const { setEndDate, setStartDate } = useDateFilterStore();
 
   const [sortConfig, setSortConfig] = useState({
     field: null,
     direction: "asc",
   });
   const [anchorEl, setAnchorEl] = useState(null);
-  const [visibleColumns, setVisibleColumns] = useState(() => {
-    // Initialize visibleColumns from localStorage or default to all columns visible
-    try {
-      const savedColumns = localStorage.getItem("visibleColumns");
-      if (savedColumns) {
-        return JSON.parse(savedColumns);
-      }
-    } catch (error) {
-      console.error("Failed to parse visibleColumns from localStorage:", error);
-    }
-    // Default to all columns visible if no saved state or on error
-    return columns.reduce((acc, col) => ({ ...acc, [col.field]: true }), {});
-  });
+  const [visibleColumns, setVisibleColumns] = useState(() =>
+    columns.reduce((acc, col) => ({ ...acc, [col.field]: true }), {})
+  );
 
   // Update visibleColumns when columns prop changes
-  useEffect(() => {
-    setVisibleColumns((prev) => {
-      const newVisibleColumns = columns.reduce(
-        (acc, col) => ({
-          ...acc,
-          [col.field]: prev[col.field] ?? true, // Preserve existing visibility or default to true
-        }),
-        {}
-      );
-      try {
-        localStorage.setItem("visibleColumns", JSON.stringify(newVisibleColumns));
-      } catch (error) {
-        console.error("Failed to save visibleColumns to localStorage:", error);
-      }
-      return newVisibleColumns;
-    });
-  }, [columns]);
-
-  // Initialize filter states from localStorage
-  useEffect(() => {
-    try {
-      const savedFilters = localStorage.getItem("tableFilters");
-      if (savedFilters) {
-        const { status, shipper, type, dates } = JSON.parse(savedFilters);
-        if (status) {
-          setStatusValue(status.value || "");
-          setStatusId(status.id || null);
-        }
-        if (shipper) {
-          setShipperValue(shipper.value || "");
-          setShipperId(shipper.id || null);
-        }
-        if (type) {
-          setTypeValue(type.value || "");
-          setTypeId(type.id || null);
-        }
-        if (dates) {
-          setStartDate(dates.startDate || null);
-          setEndDate(dates.endDate || null);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load filters from localStorage:", error);
-    }
-  }, [setStatusValue, setStatusId, setShipperValue, setShipperId, setTypeValue, setTypeId, setStartDate, setEndDate]);
-
-  // Save filter states to localStorage whenever they change
-  useEffect(() => {
-    try {
-      const filters = {
-        status: { value: statusValue, id: statusId },
-        shipper: { value: shipperValue, id: shipperId },
-        type: { value: typeValue, id: typeId },
-        dates: { startDate, endDate },
-      };
-      localStorage.setItem("tableFilters", JSON.stringify(filters));
-    } catch (error) {
-      console.error("Failed to save filters to localStorage:", error);
-    }
-  }, [statusValue, statusId, shipperValue, shipperId, typeValue, typeId, startDate, endDate]);
+  const filteredColumns = useMemo(
+    () => columns.filter((col) => visibleColumns[col.field] ?? true),
+    [columns, visibleColumns]
+  );
 
   const handleFilterClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -129,18 +63,10 @@ export default function GlobalTable({
   };
 
   const toggleColumnVisibility = (columnField) => {
-    setVisibleColumns((prev) => {
-      const newVisibleColumns = {
-        ...prev,
-        [columnField]: !prev[columnField],
-      };
-      try {
-        localStorage.setItem("visibleColumns", JSON.stringify(newVisibleColumns));
-      } catch (error) {
-        console.error("Failed to save visibleColumns to localStorage:", error);
-      }
-      return newVisibleColumns;
-    });
+    setVisibleColumns((prev) => ({
+      ...prev,
+      [columnField]: !prev[columnField],
+    }));
   };
 
   const handleSort = (field) => {
@@ -187,11 +113,6 @@ export default function GlobalTable({
     });
   }, [rows, sortConfig]);
 
-  const filteredColumns = useMemo(
-    () => columns.filter((col) => visibleColumns[col.field] ?? true),
-    [columns, visibleColumns]
-  );
-
   const handleRestartColumns = () => {
     const resetState = columns.reduce(
       (acc, col) => ({ ...acc, [col.field]: true }),
@@ -207,13 +128,6 @@ export default function GlobalTable({
     setTypeId(null);
     setStartDate(null);
     setEndDate(null);
-    // Clear localStorage
-    try {
-      localStorage.removeItem("visibleColumns");
-      localStorage.removeItem("tableFilters");
-    } catch (error) {
-      console.error("Failed to clear localStorage:", error);
-    }
     handleClose();
   };
 

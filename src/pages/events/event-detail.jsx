@@ -120,6 +120,7 @@ export default function EventDetail() {
           description: updateDesc,
         });
         if (res.status === 200) {
+          setEventImages(res.data.image);
           setIsEdit(false);
           setDescription(updateDesc);
           notification("Muvaffaqiyatli o'zgartirildi", "success");
@@ -145,56 +146,69 @@ export default function EventDetail() {
   };
 
   const handleImageUpload = async () => {
-    if (pendingImages.length === 0) {
-      notification("Yuklash uchun rasm tanlanmagan", "warning");
-      return;
-    }
-  
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      pendingImages.forEach((image) => {
-        formData.append("event_images", image.file);
-      });
-  
-      const res = await $api.patch(`/events/update/${params.id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-  
-      if (res.status === 200) {
-        const newImages = res.data.data.event_images || [];
-        // Convert filenames to objects with full URLs
-        const formattedImages = newImages.map((filename) => ({
-          url: `${import.meta.env.VITE_BASE_URL}/uploads/${filename}`,
-        }));
-        // Update eventImages, avoiding duplicates based on filename
-        setEventImages((prev) => {
-          const existingUrls = new Set(prev.map((img) => img.url.split("/").pop()));
-          const uniqueNewImages = formattedImages.filter(
-            (img) => !existingUrls.has(img.url.split("/").pop())
-          );
-          return [...prev, ...uniqueNewImages];
-        });
-        notification("Rasmlar muvaffaqiyatli yuklandi", "success");
-        setPendingImages([]); // Clear pending images
-      } else {
-        throw new Error("Server responded with unexpected status");
+  if (pendingImages.length === 0) {
+    notification("Yuklash uchun rasm tanlanmagan", "warning");
+    return;
+  }
+
+  setIsUploading(true);
+  try {
+    const formData = new FormData();
+    pendingImages.forEach((image) => {
+      formData.append("event_images", image.file);
+    });
+
+    const res = await $api.patch(`/events/update/${params.id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    if (res.status === 200) {
+      // Log the response to debug the structure
+      console.log("API Response:", res.data);
+
+      // Adjust based on actual response structure
+      const newImages = res.data?.data?.event_images || res.data?.event_images || [];
+      if (!Array.isArray(newImages)) {
+        throw new Error("Expected event_images to be an array");
       }
-    } catch (error) {
-      console.error("Image upload error:", error);
-      notification(
-        error.response?.data?.message || "Rasmlarni yuklashda xatolik yuz berdi",
-        "error"
-      );
-    } finally {
-      setIsUploading(false);
-      setConfirmImageUpload(false); // Close the modal
+
+      const formattedImages = newImages.map((filename) => ({
+        url: `${import.meta.env.VITE_BASE_URL}/Uploads/${filename}`,
+      }));
+
+      setEventImages((prev) => {
+        const existingUrls = new Set(prev.map((img) => img.url.split("/").pop()));
+        const uniqueNewImages = formattedImages.filter(
+          (img) => !existingUrls.has(img.url.split("/").pop())
+        );
+        return [...prev, ...uniqueNewImages];
+      });
+
+      notification("Rasmlar muvaffaqiyatli yuklandi", "success");
+      setPendingImages((prev) => {
+        prev.forEach((image) => URL.revokeObjectURL(image.url));
+        return [];
+      });
+    } else {
+      throw new Error(`Server responded with status: ${res.status}`);
     }
-  };
+  } catch (error) {
+    console.error("Image upload error:", error);
+    notification(
+      error.response?.data?.message || "Rasmlarni yuklashda xatolik yuz berdi",
+      "error"
+    );
+  } finally {
+    setIsUploading(false);
+    setConfirmImageUpload(false);
+  }
+};
 
   const triggerImageUploadConfirm = () => {
     if (pendingImages.length > 0) {
       setConfirmImageUpload(true);
+    } else {
+      notification("Yuklash uchun rasm tanlanmagan", "warning");
     }
   };
 
@@ -300,7 +314,13 @@ export default function EventDetail() {
           offender_full_name: offenderName,
         }));
 
-        setEventImages(res2.data.data.event_images || []);
+        // Standardize eventImages to always be an array of objects
+        const images = res2.data.data.event_images || [];
+        setEventImages(
+          images.map((filename) => ({
+            url: `${import.meta.env.VITE_BASE_URL}${filename}`,
+          }))
+        );
         setEventFile(res2.data.data.event_file || []);
         setTotal(searchQuery ? res.data.totalItems : res.data.data.total || 0);
         setData(enrichedProducts);
@@ -332,13 +352,6 @@ export default function EventDetail() {
   useEffect(() => {
     setPage(0);
   }, [searchQuery]);
-
-  // Cleanup pending images
-  useEffect(() => {
-    return () => {
-      pendingImages.forEach((image) => URL.revokeObjectURL(image.url));
-    };
-  }, [pendingImages]);
 
   const originalRows = (data || []).map((item, i) => ({
     ...item,
@@ -411,7 +424,7 @@ export default function EventDetail() {
         <p className="text-xl text-[#249B73] uppercase font-semibold">
           Yuk xatiga tegishli mahsulotlar ro'yxati
         </p>
-        <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4">
           {items.length > 0 && chandeStatusData?.status && (
             <div className="flex items-center gap-4">
               <p className="text-sm text-gray-600 w-[180px]">
@@ -510,6 +523,7 @@ export default function EventDetail() {
         eventId={params.id}
         triggerImageUploadConfirm={triggerImageUploadConfirm}
         setPendingImages={setPendingImages}
+        pendingImages={pendingImages} // Pass pendingImages to ImageGallery
       />
 
       {eventFile?.length > 0 ? (

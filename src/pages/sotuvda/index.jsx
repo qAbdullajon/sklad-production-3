@@ -8,7 +8,12 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { getStatusStyle } from "../../utils/status";
 import { format } from "date-fns";
 import StatusSelector from "../../components/status-selector";
-import { useStatusFilterStore } from "../../hooks/useFilterStore";
+import {
+  useDateFilterStore,
+  useMibStore,
+  useStatusFilterStore,
+  useSudStore,
+} from "../../hooks/useFilterStore";
 import MibSelector from "../../components/mib-location";
 import SudSelector from "../../components/sud-location";
 import DoubleDateModal from "../../components/DoubleDateModal";
@@ -18,6 +23,8 @@ export default function Sotuvda() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
   const { setValue, setId } = useStatusFilterStore();
+  const { id } = useMibStore();
+  const { id: sudId } = useSudStore();
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,9 +34,10 @@ export default function Sotuvda() {
   });
   const [rowsPerPage, setRowsPerPage] = useState(() => {
     const limitParam = parseInt(searchParams.get("limit"));
-    return isNaN(limitParam) || limitParam < 1 ? 10 : limitParam;
+    return isNaN(limitParam) || limitParam < 1 ? 100 : limitParam;
   });
   const [total, setTotal] = useState(0);
+  const { startDate, endDate } = useDateFilterStore();
 
   const columns = [
     { field: "id", headerName: "№" },
@@ -63,11 +71,7 @@ export default function Sotuvda() {
     { field: "total_price", headerName: "Umumiy narxi", vector: true },
     {
       field: "status",
-      headerName: (
-        <div>
-          <StatusSelector />
-        </div>
-      ),
+      headerName: "Status",
     },
     { field: "actions", headerName: "Taxrirlash" },
   ];
@@ -79,9 +83,13 @@ export default function Sotuvda() {
         "/statuses/products/by/d395b9e9-c9f4-4bf3-a1b5-7dbfa1bb0783",
         {
           params: {
-            page: page + 1, // API uchun 1-based
+            page: page + 1,
             limit: rowsPerPage,
             search: searchQuery,
+            mibId: id || "",
+            sudId: sudId || "",
+            startDate: startDate || "",
+            endDate: endDate || ""
           },
         }
       );
@@ -97,7 +105,7 @@ export default function Sotuvda() {
 
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage, searchQuery]);
+  }, [page, rowsPerPage, searchQuery, id, sudId, startDate, endDate]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -145,10 +153,14 @@ export default function Sotuvda() {
       "Yo'q",
     sud_region:
       row.sales_product[row.sales_product.length - 1]?.sud_sale_product?.name,
-    sud_date: format(
-      row.sales_product[row.sales_product.length - 1]?.sud_date,
-      "yyyy-MM-dd"
-    ),
+    sud_date:
+      row.sales_product.length > 0 &&
+      row.sales_product[row.sales_product.length - 1]?.sud_date
+        ? format(
+            new Date(row.sales_product[row.sales_product.length - 1].sud_date),
+            "dd-MM-yyyy"
+          )
+        : "Noma'lum sana",
     total_price: Number(row.total_price).toLocaleString("en-US", {
       minimumFractionDigits: row.total_price % 1 === 0 ? 0 : 2,
       maximumFractionDigits: 2,
@@ -187,7 +199,20 @@ export default function Sotuvda() {
         <div className="text-center text-gray-500">
           <CircularProgress color="success" />
         </div>
-      ) : data.length === 0 ? (
+      ) : (
+        <GlobalTable
+          columns={columns}
+          rows={rows}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          total={total}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+        />
+      )}
+
+      {(data.length === 0) &
+      (
         <Box textAlign="center" py={10} sx={{ userSelect: "none" }}>
           <Box
             component="img"
@@ -199,16 +224,6 @@ export default function Sotuvda() {
             Hech qanday ma'lumot topilmadi
           </Typography>
         </Box>
-      ) : (
-        <GlobalTable
-          columns={columns}
-          rows={rows}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          total={total}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
-        />
       )}
     </div>
   );

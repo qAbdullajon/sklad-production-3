@@ -137,8 +137,8 @@ const Statistika = () => {
 
       const response = await $api.get(`/all/stats`, {
         params: {
-          startDate: dateRange.startDate.format("YYYY-MM-DD"),
-          endDate: dateRange.endDate.format("YYYY-MM-DD"),
+          startDate: dateRange.startDate.format("DD-MM-YYYY"),
+          endDate: dateRange.endDate.format("DD-MM-YYYY"),
         }
       });
 
@@ -191,8 +191,8 @@ const Statistika = () => {
     try {
       const response = await $api.get(`/all/stats`, {
         params: {
-          startDate: dateRange.startDate.format("YYYY-MM-DD"),
-          endDate: dateRange.endDate.format("YYYY-MM-DD"),
+          startDate: dateRange.startDate.format("DD-MM-YYYY"),
+          endDate: dateRange.endDate.format("DD-MM-YYYY"),
           download: 'excel'
         },
         responseType: "blob",
@@ -200,7 +200,7 @@ const Statistika = () => {
 
       const filename = response.headers['content-disposition']
         ? response.headers['content-disposition'].split('filename=')[1]
-        : `statistika_${dayjs().format('YYYY-MM-DD_HH-mm')}.xlsx`;
+        : `statistika_${dayjs().format('DD-MM-YYYY_HH-mm')}.xlsx`;
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

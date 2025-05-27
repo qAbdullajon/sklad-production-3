@@ -7,7 +7,10 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { format } from "date-fns";
 import { ArrowRightFromLine } from "lucide-react";
 import { getStatusStyle } from "../../utils/status";
-import { useStatusFilterStore } from "../../hooks/useFilterStore";
+import { useDateFilterStore, useMibStore, useStatusFilterStore, useSudStore } from "../../hooks/useFilterStore";
+import MibSelector from "../../components/mib-location";
+import SudSelector from "../../components/sud-location";
+import DoubleDateModal from "../../components/DoubleDateModal";
 
 export default function YoqQilingan() {
   const navigate = useNavigate();
@@ -19,6 +22,10 @@ export default function YoqQilingan() {
   const initialPage = parseInt(searchParams.get("page")) || 0; // 0-based
   const initialRowsPerPage = parseInt(searchParams.get("rowsPerPage")) || 100;
   const searchQuery = searchParams.get("search") || "";
+
+  const { id: mibId } = useMibStore();
+    const { id: sudId } = useSudStore();
+    const { startDate, endDate } = useDateFilterStore();
 
   const [pagination, setPagination] = useState({
     page: initialPage,
@@ -63,9 +70,15 @@ export default function YoqQilingan() {
             page: pagination.currentPage,
             limit: pagination.rowsPerPage,
             search: searchQuery,
+            mibId: mibId || "",
+            sudId: sudId || "",
+            startDate: startDate || "",
+            endDate: endDate || "",
           },
         }
       );
+      console.log(res);
+
       setData(res.data.data.data);
       setPagination((prev) => ({
         ...prev,
@@ -81,7 +94,7 @@ export default function YoqQilingan() {
   // page, rowsPerPage yoki searchQuery o'zgarganda ma'lumotlarni qayta yuklash
   useEffect(() => {
     fetchData();
-  }, [pagination.page, pagination.rowsPerPage, searchQuery]);
+  }, [pagination.page, pagination.rowsPerPage, searchQuery, sudId, mibId, startDate, endDate]);
 
   // Sahifa o'zgarganda
   const handlePageChange = (event, newPage) => {
@@ -119,12 +132,12 @@ export default function YoqQilingan() {
       id: index + 1 + pagination.page * pagination.rowsPerPage,
       name: row.name || "Noma’lum",
       event_number: "#" + `${row.event_product?.event_number}` || "Noma’lum",
-      mib_region: lastDestroyed?.mib_document?.name || "Yo'q",
+      mib_region: lastDestroyed?.mib_destroyed_product?.name || "Yo'q",
       mib_number: lastDestroyed?.mib_dalolatnoma || "Yo'q",
       sud_number: lastDestroyed?.sud_dalolatnoma || "Yo'q",
-      sud_region: lastDestroyed?.sud_document?.name || "Yo'q",
+      sud_region: lastDestroyed?.sud_destroyed_product?.name || "Yo'q",
       sud_date: lastDestroyed?.sud_date
-        ? format(new Date(lastDestroyed.sud_date), "yyyy-MM-dd")
+        ? format(new Date(lastDestroyed.sud_date), "dd-MM-yyyy")
         : "Noma'lum",
       total_price: row.total_price || "0",
       status: (
@@ -153,10 +166,27 @@ export default function YoqQilingan() {
     { field: "id", headerName: "№" },
     { field: "event_number", headerName: "Yuk xati raqami" },
     { field: "mib_number", headerName: "MIB ning dalolatnoma raqami" },
-    { field: "mib_region", headerName: "MIB ning hududi" },
+    {
+      field: "mib_region",
+      headerName: (
+        <div>
+          <MibSelector title={"MIB ning hududi"} />
+        </div>
+      ),
+    },
     { field: "sud_number", headerName: "Sudning ijro varaqa no'meri" },
-    { field: "sud_region", headerName: "Sudning hududi" },
-    { field: "sud_date", headerName: "Sudning sanasi" },
+    {
+      field: "sud_region",
+      headerName: (
+        <div>
+          <SudSelector title={"Sudning hududi"} />
+        </div>
+      ),
+    },
+    {
+      field: "sud_date",
+      headerName: <DoubleDateModal title="Sudning sanasi" />,
+    },
     { field: "status", headerName: "Status" },
     { field: "actions", headerName: "Taxrirlash" },
   ];
@@ -173,7 +203,19 @@ export default function YoqQilingan() {
         <div className="text-center text-gray-500">
           <CircularProgress color="success" />
         </div>
-      ) : data.length === 0 ? (
+      ) : (
+        <GlobalTable
+          columns={columns}
+          rows={rows}
+          page={pagination.page}
+          rowsPerPage={pagination.rowsPerPage}
+          total={pagination.total}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+        />
+      )}
+
+      {data.length === 0 && (
         <Box textAlign="center" py={10} sx={{ userSelect: "none" }}>
           <Box
             component="img"
@@ -185,16 +227,6 @@ export default function YoqQilingan() {
             Hech qanday ma'lumot topilmadi
           </Typography>
         </Box>
-      ) : (
-        <GlobalTable
-          columns={columns}
-          rows={rows}
-          page={pagination.page}
-          rowsPerPage={pagination.rowsPerPage}
-          total={pagination.total}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
-        />
       )}
     </div>
   );

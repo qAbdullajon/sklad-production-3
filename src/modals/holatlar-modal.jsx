@@ -148,7 +148,7 @@ export default function EventsModal({setConfirm}) {
   const fetchShippers = async () => {
     setShipperLoading(true);
     try {
-      const res = await $api.get("shipper/all");
+      const res = await $api.get("shipper/all?limit=9999");
 
       if (res.status === 200) {
         setAllShippers(res.data.shippers);

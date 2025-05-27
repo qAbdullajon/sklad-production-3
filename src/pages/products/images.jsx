@@ -168,7 +168,7 @@ export const ImagesSection = ({ product, handleToggleModal }) => {
               <div>
                 <span>Sud qarori</span>
                 <span className="text-sm px-5">
-                  {format(item.sud_date, "yyyy-MM-dd")}
+                  {format(item.sud_date, "dd-MM-yyyy")}
                 </span>
               </div>
               <button
@@ -197,7 +197,7 @@ export const ImagesSection = ({ product, handleToggleModal }) => {
               <div>
                 <span>Sud qarori</span>
                 <span className="text-sm pl-5">
-                  {format(item.sud_date, "yyyy-MM-dd")}
+                  {format(item.sud_date, "dd-MM-yyyy")}
                 </span>
               </div>
               <button
@@ -226,7 +226,7 @@ export const ImagesSection = ({ product, handleToggleModal }) => {
               <div>
                 <span>Sud qarori</span>
                 <span className="text-sm pl-5">
-                  {format(item.sud_date, "yyyy-MM-dd")}
+                  {format(item.sud_date, "dd-MM-yyyy")}
                 </span>
               </div>
               <button

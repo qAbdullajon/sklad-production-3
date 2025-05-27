@@ -145,7 +145,7 @@ export default function PremiumProductDetailsPage() {
                     <span>
                       Yaratilgan:{" "}
                       {product.createdAt &&
-                        format(product.createdAt, "yyyy-MM-dd HH:mm")}
+                        format(product.createdAt, "dd-MM-yyyy HH:mm")}
                     </span>
                   </div>
                 </div>

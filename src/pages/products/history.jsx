@@ -6,20 +6,20 @@ export default function PriceHistoryTable({ product }) {
     {
       status: "Saqlovda",
       price: product?.price,
-      date: product?.createdAt && format(product?.createdAt, "yyyy-MM-dd"),
+      date: product?.createdAt && format(product?.createdAt, "dd-MM-yyyy"),
     },
   ];
   product.sales_product?.map((item) =>
     data.push({
       status: "Sotuvda",
-      date: item?.sud_date && format(item?.sud_date, "yyyy-MM-dd"),
+      date: item?.sud_date && format(item?.sud_date, "dd-MM-yyyy"),
       price: item?.discount_price[0].price
     })
   );
   product.document_product?.map((item) =>
     data.push({
       status: "Sotuvda",
-      date: item?.sud_date && format(item?.sud_date, "yyyy-MM-dd"),
+      date: item?.sud_date && format(item?.sud_date, "dd-MM-yyyy"),
       price: item?.discount_price && item?.discount_price[0]?.price
     })
   );

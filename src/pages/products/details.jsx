@@ -178,7 +178,7 @@ export const ProductDetails = ({ product }) => {
                 destroyed_product.at(-1)?.sud_date
                   ? format(
                       new Date(destroyed_product.at(-1).sud_date),
-                      "yyyy-MM-dd"
+                      "dd-MM-yyyy"
                     )
                   : "Sana yo'q"
               }
@@ -190,7 +190,7 @@ export const ProductDetails = ({ product }) => {
                 document_product.at(-1)?.sud_date
                   ? format(
                       new Date(document_product.at(-1).sud_date),
-                      "yyyy-MM-dd"
+                      "dd-MM-yyyy"
                     )
                   : "Sana yo'q"
               }
